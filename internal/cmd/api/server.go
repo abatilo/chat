@@ -59,6 +59,7 @@ func NewServer(cfg *ServerConfig, options ...ServerOption) *Server {
 			Addr:    fmt.Sprintf(":%d", cfg.Port),
 			Handler: cors.Default().Handler(router),
 		},
+		metrics: &metrics.NoopMetrics{},
 	}
 
 	for _, option := range options {
