@@ -8,9 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/abatilo/multiregion-chat-experiment/internal/cmd/api"
-	"github.com/jmoiron/sqlx"
+	"github.com/pashagolub/pgxmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,18 +32,17 @@ func Test_check(t *testing.T) {
 func Test_createUser_Success(t *testing.T) {
 	// Arrange
 	assert := assert.New(t)
-	db, mock, _ := sqlmock.New()
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	mock, _ := pgxmock.NewConn()
 
 	mock.ExpectBegin()
 	mock.ExpectQuery("INSERT INTO chat_user").WillReturnRows(
-		sqlmock.NewRows([]string{"chat_user_id"}).AddRow(17))
+		pgxmock.NewRows([]string{"chat_user_id"}).AddRow(int64(17)))
 	mock.ExpectCommit()
 
 	srv := api.NewServer(
 		&api.ServerConfig{},
 		api.WithAdminServer(&http.Server{}),
-		api.WithDB(sqlxDB),
+		api.WithDB(mock),
 	)
 
 	testRequestStruct := struct {
@@ -57,7 +55,7 @@ func Test_createUser_Success(t *testing.T) {
 	testRequestBytes, _ := json.Marshal(&testRequestStruct)
 
 	type testResponseStruct struct {
-		ID int `json:"id"`
+		ID int64 `json:"id"`
 	}
 	expectedResponseStruct := testResponseStruct{
 		ID: 17,
@@ -75,14 +73,12 @@ func Test_createUser_Success(t *testing.T) {
 	assert.Equal(http.StatusCreated, resp.StatusCode)
 	assert.Equal([]string{"application/json"}, resp.Header["Content-Type"])
 	assert.Equal(expectedResponseStruct, actualResponseStruct)
-	assert.Equal(17, actualResponseStruct.ID)
 }
 
 func Test_createUser_FailToInsert(t *testing.T) {
 	// Arrange
 	assert := assert.New(t)
-	db, mock, _ := sqlmock.New()
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	mock, _ := pgxmock.NewConn()
 
 	mock.ExpectBegin()
 	mock.ExpectQuery("INSERT INTO chat_user").WillReturnError(fmt.Errorf("couldn't insert"))
@@ -91,7 +87,7 @@ func Test_createUser_FailToInsert(t *testing.T) {
 	srv := api.NewServer(
 		&api.ServerConfig{},
 		api.WithAdminServer(&http.Server{}),
-		api.WithDB(sqlxDB),
+		api.WithDB(mock),
 	)
 
 	testRequestStruct := struct {

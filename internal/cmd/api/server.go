@@ -13,7 +13,7 @@ import (
 	healthhttp "github.com/AppsFlyer/go-sundheit/http"
 	"github.com/abatilo/multiregion-chat-experiment/internal/metrics"
 	"github.com/go-chi/chi/v5"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog"
@@ -35,6 +35,12 @@ type ServerConfig struct {
 	AdminPort int
 }
 
+// PGDB is a generic interface for a pgxpool connection
+type PGDB interface {
+	Begin(context.Context) (pgx.Tx, error)
+	Ping(context.Context) error
+}
+
 // Server represents the service itself and all of its dependencies.
 //
 // This pattern is heavily based on the following blog post:
@@ -46,7 +52,7 @@ type Server struct {
 	router      *chi.Mux
 	server      *http.Server
 	metrics     metrics.Client
-	db          *sqlx.DB
+	db          PGDB
 }
 
 // ServerOption lets you functionally control construction of the web server
@@ -104,7 +110,11 @@ func (s *Server) createAdminServer() *http.Server {
 	h := gosundheit.New()
 
 	err := h.RegisterCheck(
-		checks.Must(checks.NewPingCheck("postgres", s.db)),
+		&checks.CustomCheck{
+			CheckName: "ping postgres",
+			CheckFunc: func(ctx context.Context) (details interface{}, err error) {
+				return nil, s.db.Ping(ctx)
+			}},
 		gosundheit.ExecutionPeriod(20*time.Second),
 		gosundheit.ExecutionTimeout(1*time.Second),
 	)
@@ -154,7 +164,7 @@ func WithMetrics(m metrics.Client) ServerOption {
 }
 
 // WithDB sets the DB connection to use
-func WithDB(d *sqlx.DB) ServerOption {
+func WithDB(d PGDB) ServerOption {
 	return func(s *Server) {
 		s.db = d
 	}

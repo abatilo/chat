@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -92,21 +91,26 @@ func (s *Server) createUser() http.HandlerFunc {
 			return
 		}
 
-		tx := s.db.MustBeginTx(r.Context(), &sql.TxOptions{})
-
-		var userID int64
-		err = tx.QueryRowx(insertQueryString, req.Username, hashedPassword).Scan(&userID)
+		tx, err := s.db.Begin(r.Context())
 		if err != nil {
-			err := fmt.Errorf("Couldn't insert new user: %w", err)
+			err := fmt.Errorf("Couldn't begin transaction: %w", err)
 			log.Err(err).Msg(err.Error())
-
-			tx.Rollback()
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		tx.Commit()
-		resp := createUserResponse{ID: userID}
+		var userID int64
+		err = tx.QueryRow(r.Context(), insertQueryString, req.Username, hashedPassword).Scan(&userID)
+		if err != nil {
+			err := fmt.Errorf("Couldn't insert new user: %w", err)
+			log.Err(err).Msg(err.Error())
+			tx.Rollback(r.Context())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		tx.Commit(r.Context())
+		resp := createUserResponse{ID: int64(userID)}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)

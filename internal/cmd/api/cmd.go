@@ -19,10 +19,7 @@ import (
 	// Import file driver for golang-migrate
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 
-	// Import go postgres driver
-	_ "github.com/jackc/pgx/stdlib"
-
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func run(logger zerolog.Logger) *cobra.Command {
@@ -37,7 +34,10 @@ func run(logger zerolog.Logger) *cobra.Command {
 			logger.Info().Msgf("%#v", cfg)
 
 			// Build dependendies
-			db := sqlx.MustConnect("pgx", "postgres://postgres:localdev@postgresql:5432/postgres?sslmode=disable")
+			db, err := pgxpool.Connect(context.Background(), "postgres://postgres:localdev@postgresql:5432/postgres?sslmode=disable")
+			if err != nil {
+				logger.Panic().Err(err).Msg("Unable to connect to postgres")
+			}
 			// End build dependendies
 
 			s := NewServer(cfg,
