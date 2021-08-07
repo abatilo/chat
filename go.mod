@@ -4,8 +4,11 @@ go 1.16
 
 require (
 	github.com/AppsFlyer/go-sundheit v0.4.0
+	github.com/alexedwards/scs/pgxstore v0.0.0-20210804125648-91e3021b78b2
+	github.com/alexedwards/scs/v2 v2.4.0
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/golang-migrate/migrate/v4 v4.14.1
+	github.com/google/uuid v1.3.0
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/jackc/pgx/v4 v4.13.0

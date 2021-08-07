@@ -12,6 +12,7 @@ import (
 	"github.com/AppsFlyer/go-sundheit/checks"
 	healthhttp "github.com/AppsFlyer/go-sundheit/http"
 	"github.com/abatilo/multiregion-chat-experiment/internal/metrics"
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v4"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -38,6 +39,7 @@ type ServerConfig struct {
 // PGDB is a generic interface for a pgxpool connection
 type PGDB interface {
 	Begin(context.Context) (pgx.Tx, error)
+	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
 	Ping(context.Context) error
 }
 
@@ -46,13 +48,14 @@ type PGDB interface {
 // This pattern is heavily based on the following blog post:
 // https://pace.dev/blog/2018/05/09/how-I-write-http-services-after-eight-years.html
 type Server struct {
-	adminServer *http.Server
-	config      *ServerConfig
-	logger      zerolog.Logger
-	router      *chi.Mux
-	server      *http.Server
-	metrics     metrics.Client
-	db          PGDB
+	adminServer    *http.Server
+	config         *ServerConfig
+	logger         zerolog.Logger
+	router         *chi.Mux
+	server         *http.Server
+	metrics        metrics.Client
+	db             PGDB
+	sessionManager *scs.SessionManager
 }
 
 // ServerOption lets you functionally control construction of the web server
@@ -69,7 +72,8 @@ func NewServer(cfg *ServerConfig, options ...ServerOption) *Server {
 			Addr:    fmt.Sprintf(":%d", cfg.Port),
 			Handler: cors.Default().Handler(router),
 		},
-		metrics: &metrics.NoopMetrics{},
+		metrics:        &metrics.NoopMetrics{},
+		sessionManager: scs.New(),
 	}
 
 	for _, option := range options {
@@ -83,6 +87,8 @@ func NewServer(cfg *ServerConfig, options ...ServerOption) *Server {
 		s.adminServer = s.createAdminServer()
 	}
 
+	// Wrap handler with sessionManager middleware
+	s.server.Handler = s.sessionManager.LoadAndSave(s.server.Handler)
 	return s
 }
 
@@ -167,5 +173,12 @@ func WithMetrics(m metrics.Client) ServerOption {
 func WithDB(d PGDB) ServerOption {
 	return func(s *Server) {
 		s.db = d
+	}
+}
+
+// WithSessionManager sets the session manager
+func WithSessionManager(sessionManager *scs.SessionManager) ServerOption {
+	return func(s *Server) {
+		s.sessionManager = sessionManager
 	}
 }

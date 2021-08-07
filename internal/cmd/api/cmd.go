@@ -6,8 +6,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/abatilo/multiregion-chat-experiment/internal/metrics"
+	"github.com/alexedwards/scs/pgxstore"
+	"github.com/alexedwards/scs/v2"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -38,12 +41,18 @@ func run(logger zerolog.Logger) *cobra.Command {
 			if err != nil {
 				logger.Panic().Err(err).Msg("Unable to connect to postgres")
 			}
+
+			sessionManager := scs.New()
+			sessionManager.Store = pgxstore.New(db)
+			sessionManager.Lifetime = 20 * time.Minute
+			sessionManager.IdleTimeout = 20 * time.Minute
 			// End build dependendies
 
 			s := NewServer(cfg,
 				WithLogger(logger),
 				WithMetrics(&metrics.PrometheusMetrics{}),
 				WithDB(db),
+				WithSessionManager(sessionManager),
 			)
 
 			// Register signal handlers for graceful shutdown
