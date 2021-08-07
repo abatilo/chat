@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/AppsFlyer/go-sundheit v0.4.0
+	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/golang-migrate/migrate/v4 v4.14.1
