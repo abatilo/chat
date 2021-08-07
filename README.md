@@ -11,6 +11,14 @@ Local development environment is managed largely with
 of your tools. Run `./asdf.sh` to install all the versions and plugins you need.
 
 <!-- BEGIN_TOOL_VERSIONS -->
+
+```
+⇒ cat .tool-versions
+golang 1.16.7
+syncher 0.0.44
+chamber 2.10.1
+```
+
 <!-- END_TOOL_VERSIONS -->
 
 ## Layout
