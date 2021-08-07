@@ -1,0 +1,29 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    concurrency: deploy
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ghcr.io/abatilo/multiregion-chat-experiment:${{ github.sha }}
+          context: .
+          file: ./Dockerfile
+          labels: |
+            org.opencontainers.image.source=https://github.com/abatilo/multiregion-chat-experiment
