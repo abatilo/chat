@@ -89,6 +89,12 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
 }
 
+// ServeHTTP is used for testing only.
+// There's no reason to call it on normal execution paths.
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.router.ServeHTTP(w, r)
+}
+
 func (s *Server) createAdminServer() *http.Server {
 	// Healthchecks
 	h := gosundheit.New()
@@ -120,6 +126,13 @@ func (s *Server) createAdminServer() *http.Server {
 	}
 
 	return adminSrv
+}
+
+// WithAdminServer lets you override the administrative server
+func WithAdminServer(s *http.Server) ServerOption {
+	return func(srv *Server) {
+		srv.adminServer = s
+	}
 }
 
 // WithLogger sets the logger of the server
