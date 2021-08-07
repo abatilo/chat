@@ -17,6 +17,8 @@ of your tools. Run `./asdf.sh` to install all the versions and plugins you need.
 golang 1.16.7
 syncher 0.0.44
 chamber 2.10.1
+tilt 0.22.3
+gomigrate 4.14.1
 ```
 
 <!-- END_TOOL_VERSIONS -->
