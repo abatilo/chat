@@ -18,6 +18,11 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	// Import file driver for golang-migrate
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+
+	// Import go postgres driver
+	_ "github.com/jackc/pgx/stdlib"
+
+	"github.com/jmoiron/sqlx"
 )
 
 func run(logger zerolog.Logger) *cobra.Command {
@@ -32,11 +37,13 @@ func run(logger zerolog.Logger) *cobra.Command {
 			logger.Info().Msgf("%#v", cfg)
 
 			// Build dependendies
+			db := sqlx.MustConnect("pgx", "postgres://postgres:localdev@postgresql:5432/postgres?sslmode=disable")
 			// End build dependendies
 
 			s := NewServer(cfg,
 				WithLogger(logger),
 				WithMetrics(&metrics.PrometheusMetrics{}),
+				WithDB(db),
 			)
 
 			// Register signal handlers for graceful shutdown
