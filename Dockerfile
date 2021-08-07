@@ -8,6 +8,7 @@ RUN go mod download -x
 # Build artifacts
 COPY ./cmd ./cmd
 COPY ./internal ./internal
+COPY ./db ./db
 
 FROM build as install
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/chat cmd/chat.go

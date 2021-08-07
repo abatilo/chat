@@ -11,6 +11,13 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	mg "github.com/golang-migrate/migrate/v4"
+
+	// Import postgres driver for golang-migrate
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	// Import file driver for golang-migrate
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func run(logger zerolog.Logger) *cobra.Command {
@@ -62,10 +69,34 @@ func run(logger zerolog.Logger) *cobra.Command {
 
 func migrate(logger zerolog.Logger) *cobra.Command {
 	return &cobra.Command{
-		Use:   "migrate",
-		Short: "Execute database migrations for the API server",
+		Use:       "migrate (up|down)",
+		Short:     "Execute database migrations for the API server",
+		ValidArgs: []string{"up", "down"},
+		Args:      cobra.ExactValidArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			logger.Info().Msg("Running migrations for api server")
+			m, err := mg.New(
+				"file:///app/db/migrations",
+				"postgres://postgres:localdev@postgresql:5432/postgres?sslmode=disable")
+			if err != nil {
+				logger.Panic().Err(err).Msg("Couldn't instantiate new migration")
+			}
+
+			if args[0] == "up" {
+				logger.Info().Msg("Running up migrations")
+				err = m.Up()
+				if err != nil && err != mg.ErrNoChange {
+					logger.Panic().Err(err).Msg("Couldn't run up")
+				}
+				logger.Info().Msg("Up migrations were ran successfully")
+			} else if args[0] == "down" {
+				logger.Info().Msg("Running down migrations")
+				err = m.Down()
+				if err != nil && err != mg.ErrNoChange {
+					logger.Panic().Err(err).Msg("Couldn't run down")
+				}
+				logger.Info().Msg("Down migrations were ran successfully")
+			}
 		},
 	}
 }
