@@ -22,7 +22,7 @@ jobs:
       - uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ghcr.io/abatilo/multiregion-chat-experiment:${{ github.sha }}
+          tags: ghcr.io/abatilo/multiregion-chat-experiment:latest,ghcr.io/abatilo/multiregion-chat-experiment:${{ github.sha }}
           context: .
           file: ./Dockerfile
           labels: |
