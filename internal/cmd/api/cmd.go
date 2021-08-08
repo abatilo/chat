@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -31,13 +32,15 @@ func run(logger zerolog.Logger) *cobra.Command {
 		Short: "Run the API server",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg := &ServerConfig{
-				Port:      viper.GetInt(FlagPortName),
-				AdminPort: viper.GetInt(FlagAdminPortName),
+				Port:       viper.GetInt(FlagPortName),
+				AdminPort:  viper.GetInt(FlagAdminPortName),
+				PGHost:     viper.GetString(FlagPGHost),
+				PGPassword: viper.GetString(FlagPGPassword),
 			}
 			logger.Info().Msgf("%#v", cfg)
 
 			// Build dependendies
-			db, err := pgxpool.Connect(context.Background(), "postgres://postgres:localdev@postgresql:5432/postgres?sslmode=disable")
+			db, err := pgxpool.Connect(context.Background(), fmt.Sprintf("postgres://postgres:%s@%s:5432/postgres?sslmode=disable", cfg.PGPassword, cfg.PGHost))
 			if err != nil {
 				logger.Panic().Err(err).Msg("Unable to connect to postgres")
 			}
@@ -80,6 +83,12 @@ func run(logger zerolog.Logger) *cobra.Command {
 	cmd.PersistentFlags().Int(FlagAdminPortName, 8081, "The admin port to run the administrative web server on")
 	viper.BindPFlag(FlagAdminPortName, cmd.PersistentFlags().Lookup(FlagAdminPortName))
 
+	cmd.PersistentFlags().String(FlagPGHost, "postgresql", "The hostname for accessing postgres")
+	viper.BindPFlag(FlagPGHost, cmd.PersistentFlags().Lookup(FlagPGHost))
+
+	cmd.PersistentFlags().String(FlagPGPassword, "localdev", "The password for accessing postgres")
+	viper.BindPFlag(FlagPGPassword, cmd.PersistentFlags().Lookup(FlagPGPassword))
+
 	return cmd
 }
 
@@ -90,10 +99,17 @@ func migrate(logger zerolog.Logger) *cobra.Command {
 		ValidArgs: []string{"up", "down"},
 		Args:      cobra.ExactValidArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			connectionString := "postgres://postgres:localdev@postgresql:5432/postgres?sslmode=disable"
+			pgHost, hostFound := os.LookupEnv("CHAT_PG_HOST")
+			pgPassword, passwordFound := os.LookupEnv("CHAT_PG_PASSWORD")
+			if hostFound && passwordFound {
+				connectionString = fmt.Sprintf("postgres://postgres:%s@%s:5432/postgres?sslmode=disable", pgPassword, pgHost)
+			}
+
 			logger.Info().Msg("Running migrations for api server")
 			m, err := mg.New(
 				"file:///app/db/migrations",
-				"postgres://postgres:localdev@postgresql:5432/postgres?sslmode=disable")
+				connectionString)
 			if err != nil {
 				logger.Panic().Err(err).Msg("Couldn't instantiate new migration")
 			}

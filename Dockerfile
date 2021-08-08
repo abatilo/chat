@@ -28,7 +28,10 @@ RUN cd /tmp/rds-ca && cat aws-rds-ca-bundle.pem|awk 'split_after==1{n++;split_af
     && update-ca-certificates
 
 # Copy our static executable
-COPY --from=install /go/bin/chat /go/bin/chat
+COPY --from=install /go/bin/chat /usr/local/bin/chat
+
+WORKDIR /app
+COPY ./db ./db
 
 # Run the binary.
-ENTRYPOINT ["/go/bin/chat", "api", "run"]
+ENTRYPOINT ["/usr/local/bin/chat", "api", "run"]

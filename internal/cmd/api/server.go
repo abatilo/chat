@@ -27,14 +27,22 @@ const (
 
 	// FlagAdminPortName is the name of the flag that sets which port the admin server runs on
 	FlagAdminPortName = "admin-port"
+
+	// FlagPGHost is the hostname for the database
+	FlagPGHost = "pg-host"
+
+	// FlagPGPassword is the password for accessing the postgres database
+	FlagPGPassword = "pg-password"
 )
 
 // ServerConfig is all configuration for running the application.
 //
 // We use a config struct so that we can statically type and check configuration values
 type ServerConfig struct {
-	Port      int
-	AdminPort int
+	Port       int
+	AdminPort  int
+	PGHost     string
+	PGPassword string
 }
 
 // PGDB is a generic interface for a pgxpool connection
