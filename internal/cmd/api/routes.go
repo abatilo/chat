@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -172,8 +171,6 @@ func (s *Server) authRequired() func(http.Handler) http.Handler {
 }
 
 func (s *Server) createMessage() http.HandlerFunc {
-	log := s.logger.With().Str("method", "createMessage").Logger()
-
 	duration := s.metrics.NewHistogram(prometheus.HistogramOpts{
 		Name: "chat_create_message_duration_seconds",
 		Help: "Histogram for createMessage endpoint latency",
@@ -207,151 +204,66 @@ func (s *Server) createMessage() http.HandlerFunc {
 	}
 
 	const (
-		listMessageTypesQueryString   = "SELECT id, name FROM message_type"
-		listVideoSourcesQueryString   = "SELECT id, name FROM video_source"
-		createMessageQueryString      = "INSERT INTO message (sender_id, recipient_id, message_type_id) VALUES ($1, $2, $3) RETURNING id, created_at"
+		createMessageQueryString = `
+INSERT INTO message (sender_id, recipient_id, message_type_id)
+	SELECT $1, $2, message_type.id
+		FROM message_type
+		WHERE message_type.name = $3
+	RETURNING id, created_at
+`
 		createTextMessageQueryString  = "INSERT INTO text_message (message_id, text) VALUES ($1, $2)"
 		createImageMessageQueryString = "INSERT INTO image_message (message_id, url, width, height) VALUES ($1, $2, $3, $4)"
-		createVideoMessageQueryString = "INSERT INTO video_message (message_id, url, source) VALUES ($1, $2, $3)"
+		createVideoMessageQueryString = `
+INSERT INTO video_message (message_id, url, source)
+	SELECT $1, $2, video_source.id
+	FROM video_source
+	WHERE video_source.name = $3
+`
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 
-		var req createMessageRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			err := fmt.Errorf("Couldn't decode req: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		io.CopyN(ioutil.Discard, r.Body, 512)
+		// Parse request
+		var requestStruct createMessageRequest
+		bodyBytes, _ := ioutil.ReadAll(r.Body)
 		r.Body.Close()
+		json.Unmarshal(bodyBytes, &requestStruct)
 
-		if req.Content.Width == 0 {
-			req.Content.Width = 64
+		if requestStruct.Content.Width == 0 {
+			requestStruct.Content.Width = 64
 		}
-		if req.Content.Height == 0 {
-			req.Content.Height = 64
-		}
-
-		tx, err := s.db.Begin(r.Context())
-		if err != nil {
-			err := fmt.Errorf("Couldn't begin transaction: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		if requestStruct.Content.Height == 0 {
+			requestStruct.Content.Height = 64
 		}
 
-		messageNameToID := make(map[string]int16)
-
-		rows, err := tx.Query(r.Context(), listMessageTypesQueryString)
-		if err != nil {
-			err := fmt.Errorf("Couldn't lookup valid message types: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			tx.Rollback(r.Context())
-			return
-		}
-		for rows.Next() {
-			var messageTypeID int16
-			var messageTypeName string
-			rows.Scan(&messageTypeID, &messageTypeName)
-			messageNameToID[messageTypeName] = messageTypeID
-		}
-
-		messageTypeID, found := messageNameToID[req.Content.Type]
-		if !found {
-			err := fmt.Errorf("Unrecognized message type: %v", req.Content.Type)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			tx.Rollback(r.Context())
-			return
-		}
+		tx, _ := s.db.Begin(r.Context())
 
 		var messageID int64
 		var createdAt time.Time
-		err = tx.QueryRow(r.Context(), createMessageQueryString, req.Sender, req.Recipient, messageTypeID).Scan(&messageID, &createdAt)
-		if err != nil {
-			err := fmt.Errorf("Couldn't create message: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			tx.Rollback(r.Context())
-			return
-		}
+		tx.QueryRow(r.Context(),
+			createMessageQueryString,
+			requestStruct.Sender,
+			requestStruct.Recipient,
+			requestStruct.Content.Type).Scan(&messageID, &createdAt)
 
-		if req.Content.Type == "text" {
-			_, err = tx.Exec(r.Context(), createTextMessageQueryString, messageID, req.Content.Text)
-			if err != nil {
-				err := fmt.Errorf("Couldn't insert text message: %w", err)
-				log.Err(err).Msg(err.Error())
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				tx.Rollback(r.Context())
-				return
-			}
-		} else if req.Content.Type == "image" {
-			_, err = tx.Exec(r.Context(), createImageMessageQueryString, messageID, req.Content.URL, req.Content.Width, req.Content.Height)
-			if err != nil {
-				err := fmt.Errorf("Couldn't insert image message: %w", err)
-				log.Err(err).Msg(err.Error())
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				tx.Rollback(r.Context())
-				return
-			}
-		} else if req.Content.Type == "video" {
-			videoSourceToID := make(map[string]int16)
-
-			rows, err := tx.Query(r.Context(), listVideoSourcesQueryString)
-			if err != nil {
-				err := fmt.Errorf("Couldn't lookup valid video sources: %w", err)
-				log.Err(err).Msg(err.Error())
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				tx.Rollback(r.Context())
-				return
-			}
-			for rows.Next() {
-				var videoSourceID int16
-				var videoSourceName string
-				rows.Scan(&videoSourceID, &videoSourceName)
-				videoSourceToID[videoSourceName] = videoSourceID
-			}
-
-			videoSourceID, found := videoSourceToID[req.Content.Source]
-			if !found {
-				err := fmt.Errorf("Unrecognized video source: %v", req.Content.Source)
-				log.Err(err).Msg(err.Error())
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				tx.Rollback(r.Context())
-				return
-			}
-
-			_, err = tx.Exec(r.Context(), createVideoMessageQueryString, messageID, req.Content.URL, videoSourceID)
-			if err != nil {
-				err := fmt.Errorf("Couldn't insert video message: %w", err)
-				log.Err(err).Msg(err.Error())
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				tx.Rollback(r.Context())
-				return
-			}
-		} else {
-			err := fmt.Errorf("Unrecognized message type: %v", req.Content.Type)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			tx.Rollback(r.Context())
-			return
+		if requestStruct.Content.Type == "text" {
+			tx.Exec(r.Context(), createTextMessageQueryString, messageID, requestStruct.Content.Text)
+		} else if requestStruct.Content.Type == "image" {
+			tx.Exec(r.Context(), createImageMessageQueryString, messageID, requestStruct.Content.URL, requestStruct.Content.Width, requestStruct.Content.Height)
+		} else if requestStruct.Content.Type == "video" {
+			tx.Exec(r.Context(), createVideoMessageQueryString, messageID, requestStruct.Content.URL, requestStruct.Content.Source)
 		}
 
 		tx.Commit(r.Context())
-
-		resp := createMessageReponse{
+		responseStruct := createMessageReponse{
 			ID:        messageID,
 			Timestamp: createdAt.UTC().Format(time.RFC3339),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responseStruct)
 
 		duration.Observe(time.Since(startTime).Seconds())
 	}

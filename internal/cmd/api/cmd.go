@@ -40,7 +40,9 @@ func run(logger zerolog.Logger) *cobra.Command {
 			logger.Info().Msgf("%#v", cfg)
 
 			// Build dependendies
-			db, err := pgxpool.Connect(context.Background(), fmt.Sprintf("postgres://postgres:%s@%s:5432/postgres?sslmode=disable", cfg.PGPassword, cfg.PGHost))
+			connectionString := fmt.Sprintf("postgres://postgres:%s@%s:5432/postgres?sslmode=disable", cfg.PGPassword, cfg.PGHost)
+			logger.Info().Msg(connectionString)
+			db, err := pgxpool.Connect(context.Background(), connectionString)
 			if err != nil {
 				logger.Panic().Err(err).Msg("Unable to connect to postgres")
 			}
