@@ -48,8 +48,8 @@ const pod = new kx.PodBuilder({
       image,
       ports: { http: 8080, admin: 8081 },
       resources: {
-        requests: { cpu: "200m", memory: "64Mi" },
-        limits: { cpu: "200m", memory: "64Mi" },
+        requests: { cpu: "250m", memory: "64Mi" },
+        limits: { cpu: "250m", memory: "64Mi" },
       },
       readinessProbe: {
         httpGet: { path: "/check", port: "http" },
@@ -90,7 +90,7 @@ const ingressMiddleware = new k8s.apiextensions.CustomResource(name, {
   metadata: { namespace: deployment.metadata.namespace },
   spec: {
     rateLimit: {
-      average: 300,
+      average: 500,
       burst: 100,
     },
   },
