@@ -1,6 +1,7 @@
 # chat
 
 [![codecov](https://codecov.io/gh/abatilo/chat/branch/main/graph/badge.svg?token=V0ILXvkvZY)](https://codecov.io/gh/abatilo/chat)
+[![Go Report Card](https://goreportcard.com/badge/github.com/abatilo/chat)](https://goreportcard.com/report/github.com/abatilo/chat)
 
 The following is a repository for a simple chat application architecture.
 
