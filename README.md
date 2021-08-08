@@ -1,5 +1,7 @@
 # chat
 
+[![codecov](https://codecov.io/gh/abatilo/chat/branch/main/graph/badge.svg?token=V0ILXvkvZY)](https://codecov.io/gh/abatilo/chat)
+
 The following is a repository for a simple chat application architecture.
 
 ## Getting started
