@@ -1,0 +1,4 @@
+config:
+  aws:region: us-west-2
+  chat:postgresPassword:
+    secure: AAABADF5ZchSBO5dFglcF0ZqhdhkQJPIUKLVqbN9+auTAYtlAp9gccomfFy3/oCm/2Kwhyk=
