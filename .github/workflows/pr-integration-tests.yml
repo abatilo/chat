@@ -1,0 +1,39 @@
+name: "Integration tests on Pull Request"
+on:
+  pull_request: {}
+
+jobs:
+  integration-test:
+    name: "Run integration tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install asdf
+        uses: asdf-vm/actions/setup@v1
+      - name: Install asdf tools
+        run: |
+          ./asdf.sh
+
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.2.0
+
+      - name: Run integration tests
+        id: fdsa
+        env:
+          HOST: http://localhost:8080
+        run: |
+          # Build and setup environment
+          tilt up --file Tiltfile.ci --stream &
+
+          # Wait for environment to come up
+          curl --connect-timeout 5 \
+            --max-time 10 \
+            --retry 25 \
+            --retry-connrefused \
+            --retry-delay 5 \
+            --retry-max-time 300 \
+            --fail \
+            'http://localhost:8080/check'
+
+          ./scripts/integration_test.sh
