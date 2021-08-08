@@ -1,4 +1,4 @@
-module github.com/abatilo/multiregion-chat-experiment
+module github.com/abatilo/chat
 
 go 1.16
 

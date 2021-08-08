@@ -22,7 +22,7 @@ helm_remote("postgresql",
 
 # When running locally through Tilt, we want to run in dev mode
 docker_build_with_restart(
-  ref="multiregion-chat-experiment",
+  ref="chat",
   context=".", # From location of Tiltfile
   dockerfile="./Dockerfile",
   live_update=[

@@ -22,8 +22,8 @@ jobs:
       - uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ghcr.io/abatilo/multiregion-chat-experiment:latest,ghcr.io/abatilo/multiregion-chat-experiment:${{ github.sha }}
+          tags: ghcr.io/abatilo/chat:latest,ghcr.io/abatilo/chat:${{ github.sha }}
           context: .
           file: ./Dockerfile
           labels: |
-            org.opencontainers.image.source=https://github.com/abatilo/multiregion-chat-experiment
+            org.opencontainers.image.source=https://github.com/abatilo/chat

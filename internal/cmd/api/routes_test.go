@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/abatilo/multiregion-chat-experiment/internal/cmd/api"
+	"github.com/abatilo/chat/internal/cmd/api"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/pashagolub/pgxmock"

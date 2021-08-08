@@ -11,7 +11,7 @@ import (
 	gosundheit "github.com/AppsFlyer/go-sundheit"
 	"github.com/AppsFlyer/go-sundheit/checks"
 	healthhttp "github.com/AppsFlyer/go-sundheit/http"
-	"github.com/abatilo/multiregion-chat-experiment/internal/metrics"
+	"github.com/abatilo/chat/internal/metrics"
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgconn"

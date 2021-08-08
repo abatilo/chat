@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/abatilo/multiregion-chat-experiment/cmd/api"
+	"github.com/abatilo/chat/cmd/api"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

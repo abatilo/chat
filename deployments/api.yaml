@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: multiregion-chat-experiment
+          image: chat
           ports:
             - containerPort: 8080
               name: http

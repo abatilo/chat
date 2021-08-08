@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/abatilo/multiregion-chat-experiment/internal/metrics"
+	"github.com/abatilo/chat/internal/metrics"
 	"github.com/alexedwards/scs/pgxstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/rs/zerolog"

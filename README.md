@@ -1,8 +1,6 @@
-# multiregion-chat-experiment
+# chat
 
-The following is a repository for a simple chat application architecture but
-used as an experimentation test bed for doing a multiple region stateful
-application implementation.
+The following is a repository for a simple chat application architecture.
 
 ## Getting started
 

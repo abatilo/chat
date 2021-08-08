@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/abatilo/multiregion-chat-experiment/internal/cmd/api"
+	"github.com/abatilo/chat/internal/cmd/api"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
