@@ -44,8 +44,8 @@ func run(logger zerolog.Logger) *cobra.Command {
 
 			sessionManager := scs.New()
 			sessionManager.Store = pgxstore.New(db)
-			sessionManager.Lifetime = 20 * time.Minute
-			sessionManager.IdleTimeout = 20 * time.Minute
+			sessionManager.Lifetime = 12 * time.Hour
+			sessionManager.IdleTimeout = 3 * time.Hour
 			// End build dependendies
 
 			s := NewServer(cfg,

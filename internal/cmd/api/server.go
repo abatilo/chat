@@ -14,6 +14,7 @@ import (
 	"github.com/abatilo/multiregion-chat-experiment/internal/metrics"
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
@@ -38,7 +39,9 @@ type ServerConfig struct {
 
 // PGDB is a generic interface for a pgxpool connection
 type PGDB interface {
+	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 	Begin(context.Context) (pgx.Tx, error)
+	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
 	Ping(context.Context) error
 }
