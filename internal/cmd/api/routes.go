@@ -299,7 +299,7 @@ WITH desired_messages AS (
 	SELECT id AS message_id
 	FROM message
 	WHERE recipient_id = $1
-		AND id >= $2
+		AND id >= least($2, (SELECT max(id) from message))
 	limit $3
 )
 SELECT message.id,
