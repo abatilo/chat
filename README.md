@@ -51,3 +51,12 @@ func (s *Server) registerRoutes() {
 ```
 
 <!-- END_REGISTER_ROUTES -->
+
+## Integration testing script
+
+The following script demonstrates hitting all of the endpoints and message
+types with happy path examples.
+
+<!-- BEGIN_INTEGRATION_TEST -->
+
+<!-- END_INTEGRATION_TEST -->
