@@ -58,6 +58,13 @@ const pod = new kx.PodBuilder({
         httpGet: { path: "/healthz", port: "admin" },
         initialDelaySeconds: 30,
       },
+      lifecycle: {
+        preStop: {
+          exec: {
+            command: ["/bin/sleep", "5"],
+          },
+        },
+      },
     },
   ],
 });
