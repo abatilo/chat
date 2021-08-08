@@ -28,7 +28,6 @@ func main() {
 		Short: "This command is the entrypoint for all parts of the chat application",
 	}
 
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
 
 	rootCmd.AddCommand(api.Cmd(logger))
