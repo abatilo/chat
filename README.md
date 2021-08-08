@@ -21,8 +21,34 @@ chamber 2.10.1
 tilt 0.22.3
 gomigrate 4.14.1
 pulumi 3.9.1
+nodejs 14.17.4
 ```
 
 <!-- END_TOOL_VERSIONS -->
 
-## Layout
+## Routes
+
+Application business logic is implemented in
+[./internal/cmd/api/routes.go](./internal/cmd/api/routes.go) and follows a
+simple setup.
+
+<!-- BEGIN_REGISTER_ROUTES -->
+
+```golang
+func (s *Server) registerRoutes() {
+	// Register session middleware
+	s.router.Use(s.sessionManager.LoadAndSave)
+
+	// Application routes
+	s.router.Get("/check", s.ping())
+	s.router.Post("/users", s.createUser())
+	s.router.Post("/login", s.login())
+	s.router.Route("/messages", func(r chi.Router) {
+		r.Use(s.authRequired())
+		r.Post("/", s.createMessage())
+		r.Get("/", s.listMessages())
+	})
+}
+```
+
+<!-- END_REGISTER_ROUTES -->

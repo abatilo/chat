@@ -15,8 +15,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// BEGIN registerRoutes
+
 func (s *Server) registerRoutes() {
+	// Register session middleware
 	s.router.Use(s.sessionManager.LoadAndSave)
+
+	// Application routes
 	s.router.Get("/check", s.ping())
 	s.router.Post("/users", s.createUser())
 	s.router.Post("/login", s.login())
@@ -26,6 +31,8 @@ func (s *Server) registerRoutes() {
 		r.Get("/", s.listMessages())
 	})
 }
+
+// END registerRoutes
 
 func (s *Server) ping() http.HandlerFunc {
 	duration := s.metrics.NewHistogram(prometheus.HistogramOpts{
