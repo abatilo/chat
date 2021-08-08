@@ -133,7 +133,7 @@ func (s *Server) login() http.HandlerFunc {
 	}
 
 	const (
-		selectPasswordQueryString = "SELECT id, password from chat_user WHERE username = $1"
+		selectPasswordQueryString = "SELECT id, password FROM chat_user WHERE username = $1"
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -197,6 +197,7 @@ func (s *Server) authRequired() func(http.Handler) http.Handler {
 			authorizationHeader := r.Header.Get("authorization")
 			if authorizationHeader == "" {
 				// We might want these as 404s. It depends on the expected user experience
+				s.logger.Error().Msg("Missing authorization header")
 				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 				return
 			}
@@ -210,6 +211,7 @@ func (s *Server) authRequired() func(http.Handler) http.Handler {
 			if token == authorizationHeader {
 				next.ServeHTTP(w, r)
 			} else {
+				s.logger.Error().Str("token", token).Str("header", authorizationHeader).Msg("Session token didn't match what's in authorization header")
 				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			}
 		})
@@ -413,7 +415,7 @@ func (s *Server) listMessages() http.HandlerFunc {
 	}
 
 	const (
-		listMessagesQueryString = "SELECT chat_user_id, password from chat_user WHERE username = $1"
+		listMessagesQueryString = "SELECT chat_user_id, password FROM chat_user WHERE username = $1"
 	)
 
 	return func(w http.ResponseWriter, r *http.Request) {
