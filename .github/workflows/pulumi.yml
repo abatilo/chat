@@ -26,6 +26,11 @@ jobs:
         run: |
           aws eks update-kubeconfig --name usw2-r
 
+      - name: Initialize pulumi dependencies
+        working-directory: deployments/pulumi
+        run: |
+          npm ci
+
       - uses: pulumi/actions@v3
         if: github.event_name == 'pull_request'
         env:
