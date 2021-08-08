@@ -48,8 +48,6 @@ func (s *Server) ping() http.HandlerFunc {
 }
 
 func (s *Server) createUser() http.HandlerFunc {
-	log := s.logger.With().Str("method", "createUser").Logger()
-
 	duration := s.metrics.NewHistogram(prometheus.HistogramOpts{
 		Name: "chat_create_users_duration_seconds",
 		Help: "Histogram for createUser endpoint latency",
@@ -71,51 +69,24 @@ func (s *Server) createUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 
-		var req createUserRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			err := fmt.Errorf("Couldn't decode req: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		io.CopyN(ioutil.Discard, r.Body, 512)
+		// Parse request
+		var requestStruct createUserRequest
+		bodyBytes, _ := ioutil.ReadAll(r.Body)
 		r.Body.Close()
+		json.Unmarshal(bodyBytes, &requestStruct)
 
-		// TODO: Request param length validation
-
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.MinCost)
-		if err != nil {
-			err := fmt.Errorf("Couldn't hash the passed in password: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		tx, err := s.db.Begin(r.Context())
-		if err != nil {
-			err := fmt.Errorf("Couldn't begin transaction: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
+		// Create user in database
 		var userID int64
-		err = tx.QueryRow(r.Context(), insertQueryString, req.Username, hashedPassword).Scan(&userID)
-		if err != nil {
-			err := fmt.Errorf("Couldn't insert new user: %w", err)
-			log.Err(err).Msg(err.Error())
-			tx.Rollback(r.Context())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
+		tx, _ := s.db.Begin(r.Context())
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(requestStruct.Password), bcrypt.MinCost)
+		tx.QueryRow(r.Context(), insertQueryString, requestStruct.Username, hashedPassword).Scan(&userID)
 		tx.Commit(r.Context())
-		resp := createUserResponse{ID: int64(userID)}
 
+		// Write out response
+		responseStruct := createUserResponse{ID: int64(userID)}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responseStruct)
 
 		duration.Observe(time.Since(startTime).Seconds())
 	}
