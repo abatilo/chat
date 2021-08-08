@@ -16,6 +16,7 @@ import (
 )
 
 func (s *Server) registerRoutes() {
+	s.router.Use(s.sessionManager.LoadAndSave)
 	s.router.Get("/check", s.ping())
 	s.router.Post("/users", s.createUser())
 	s.router.Post("/login", s.login())
@@ -159,7 +160,7 @@ func (s *Server) login() http.HandlerFunc {
 		}
 
 		var userID int64
-		var hashedPassword string
+		var hashedPassword []byte
 		err = s.db.QueryRow(r.Context(), selectPasswordQueryString, req.Username).Scan(&userID, &hashedPassword)
 		if err != nil {
 			err := fmt.Errorf("Couldn't fetch user's hashed password: %w", err)
@@ -168,7 +169,7 @@ func (s *Server) login() http.HandlerFunc {
 			return
 		}
 
-		err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.Password))
+		err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(req.Password))
 		if err != nil {
 			err := fmt.Errorf("Incorrect password: %w", err)
 			log.Err(err).Msg(err.Error())
@@ -183,7 +184,7 @@ func (s *Server) login() http.HandlerFunc {
 		resp := loginResponse{ID: int64(userID), Token: token.String()}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(resp)
 
 		duration.Observe(time.Since(startTime).Seconds())

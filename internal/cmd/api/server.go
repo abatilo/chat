@@ -90,8 +90,6 @@ func NewServer(cfg *ServerConfig, options ...ServerOption) *Server {
 		s.adminServer = s.createAdminServer()
 	}
 
-	// Wrap handler with sessionManager middleware
-	s.server.Handler = s.sessionManager.LoadAndSave(s.server.Handler)
 	return s
 }
 
