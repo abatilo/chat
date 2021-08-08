@@ -93,8 +93,6 @@ func (s *Server) createUser() http.HandlerFunc {
 }
 
 func (s *Server) login() http.HandlerFunc {
-	log := s.logger.With().Str("method", "login").Logger()
-
 	duration := s.metrics.NewHistogram(prometheus.HistogramOpts{
 		Name: "chat_login_duration_seconds",
 		Help: "Histogram for login endpoint latency",
@@ -117,53 +115,30 @@ func (s *Server) login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 
-		var req loginRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			err := fmt.Errorf("Couldn't decode req: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		io.CopyN(ioutil.Discard, r.Body, 512)
+		// Parse request
+		var requestStruct loginRequest
+		bodyBytes, _ := ioutil.ReadAll(r.Body)
 		r.Body.Close()
-
-		// TODO: Request param length validation
-
-		if err != nil {
-			err := fmt.Errorf("Couldn't begin transaction: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		json.Unmarshal(bodyBytes, &requestStruct)
 
 		var userID int64
 		var hashedPassword []byte
-		err = s.db.QueryRow(r.Context(), selectPasswordQueryString, req.Username).Scan(&userID, &hashedPassword)
+		s.db.QueryRow(r.Context(), selectPasswordQueryString, requestStruct.Username).Scan(&userID, &hashedPassword)
+		err := bcrypt.CompareHashAndPassword(hashedPassword, []byte(requestStruct.Password))
 		if err != nil {
-			err := fmt.Errorf("Couldn't fetch user's hashed password: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			// Do we want to 401? 403?
+			http.Error(w, "Failed to login", http.StatusUnauthorized)
 			return
 		}
 
-		err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(req.Password))
-		if err != nil {
-			err := fmt.Errorf("Incorrect password: %w", err)
-			log.Err(err).Msg(err.Error())
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-
+		// Place a session API token into this user's session
 		token := uuid.New()
-
 		s.sessionManager.Put(r.Context(), "token", token.String())
 
-		resp := loginResponse{ID: int64(userID), Token: token.String()}
-
+		responseStruct := loginResponse{ID: int64(userID), Token: token.String()}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resp)
+		json.NewEncoder(w).Encode(responseStruct)
 
 		duration.Observe(time.Since(startTime).Seconds())
 	}
