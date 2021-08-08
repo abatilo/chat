@@ -17,6 +17,7 @@ syncher 0.0.44
 chamber 2.10.1
 tilt 0.22.3
 gomigrate 4.14.1
+pulumi 3.9.1
 ```
 
 <!-- END_TOOL_VERSIONS -->
