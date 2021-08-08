@@ -11,3 +11,5 @@ asdf plugin-add gomigrate https://github.com/joschi/asdf-gomigrate
 asdf install gomigrate 4.14.1
 asdf plugin-add pulumi https://github.com/canha/asdf-pulumi.git
 asdf install pulumi 3.9.1
+asdf plugin-add nodejs https://github.com/asdf-vm/asdf-nodejs.git
+asdf install nodejs 14.17.4
