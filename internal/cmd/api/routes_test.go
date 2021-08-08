@@ -3,7 +3,6 @@ package api_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -79,41 +78,6 @@ func Test_createUser_Success(t *testing.T) {
 	assert.Equal(http.StatusCreated, resp.StatusCode)
 	assert.Equal("application/json", resp.Header.Get("Content-Type"))
 	assert.Equal(expectedResponseStruct, actualResponseStruct)
-}
-
-func Test_createUser_FailToInsert(t *testing.T) {
-	// Arrange
-	assert := assert.New(t)
-	mock, _ := pgxmock.NewConn()
-
-	mock.ExpectBegin()
-	mock.ExpectQuery("INSERT INTO chat_user").WillReturnError(fmt.Errorf("couldn't insert"))
-	mock.ExpectRollback()
-
-	srv := api.NewServer(
-		&api.ServerConfig{},
-		api.WithAdminServer(&http.Server{}),
-		api.WithDB(mock),
-	)
-
-	testRequestStruct := struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}{
-		Username: "fakeuser",
-		Password: "fakepassword",
-	}
-	testRequestBytes, _ := json.Marshal(&testRequestStruct)
-
-	testRequest := httptest.NewRequest(http.MethodPost, "/users", bytes.NewReader(testRequestBytes))
-
-	// Act
-	w := httptest.NewRecorder()
-	srv.ServeHTTP(w, testRequest)
-	resp := w.Result()
-
-	// Assert
-	assert.Equal(http.StatusInternalServerError, resp.StatusCode)
 }
 
 func Test_login_Success(t *testing.T) {
