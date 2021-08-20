@@ -35,7 +35,8 @@ const image = repository.buildAndPushImage({
   cacheFrom: {
     stages: ["build"],
   },
-  env: { DOCKER_BUILDKIT: "1" },
+  extraOptions: ['--load'],
+  args: { BUILDKIT_INLINE_CACHE: '1' },
 });
 
 const pod = new kx.PodBuilder({

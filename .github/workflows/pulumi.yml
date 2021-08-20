@@ -9,6 +9,10 @@ jobs:
   pulumi:
     name: Run pulumi
     runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: us-west-2
     steps:
       - uses: actions/checkout@v2
 
@@ -19,12 +23,20 @@ jobs:
           ./asdf.sh
 
       - name: Login to EKS
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-west-2
         run: |
           aws eks update-kubeconfig --name usw2-r
+
+      - uses: docker/setup-buildx-action@v1
+        with:
+          install: true
+          driver: kubernetes
+          driver-opts: |
+            replicas=1
+            namespace=buildx
+            requests.cpu=1
+            requests.memory=1Gi
+            limits.cpu=1.5
+            requests.memory=2Gi
 
       - name: Initialize pulumi dependencies
         working-directory: deployments/pulumi
