@@ -105,7 +105,51 @@ const ingressMiddleware = new k8s.apiextensions.CustomResource(name, {
   },
 });
 
+const httpToHttpsMiddleware = new k8s.apiextensions.CustomResource(name, {
+  apiVersion: "traefik.containo.us/v1alpha1",
+  kind: "Middleware",
+  metadata: {
+    name: "chat-http-to-https",
+    namespace: deployment.metadata.namespace,
+  },
+  spec: {
+    redirectScheme: {
+      scheme: "https",
+      permanent: true,
+    }
+  },
+});
+
 const ingressRoute = new k8s.apiextensions.CustomResource(name, {
+  apiVersion: "traefik.containo.us/v1alpha1",
+  kind: "IngressRoute",
+  metadata: {
+    namespace: deployment.metadata.namespace,
+  },
+  spec: {
+    entryPoints: ["web"],
+    routes: [
+      {
+        match: "Host(`chat.aaronbatilo.dev`) && PathPrefix(`/`)",
+        kind: "Rule",
+        middlewares: [{ name: httpToHttpsMiddleware.metadata.name }, { name: ingressMiddleware.metadata.name }],
+        services: [
+          { name: service.metadata.name, port: service.spec.ports[0].port },
+        ],
+      },
+      {
+        match: "Host(`chat.aaronbatilo.dev`) && PathPrefix(`/metrics`)",
+        kind: "Rule",
+        middlewares: [{ name: ingressMiddleware.metadata.name }],
+        services: [
+          { name: service.metadata.name, port: service.spec.ports[1].port },
+        ],
+      },
+    ],
+  },
+});
+
+const ingressRouteSecure = new k8s.apiextensions.CustomResource(name, {
   apiVersion: "traefik.containo.us/v1alpha1",
   kind: "IngressRoute",
   metadata: {
@@ -128,6 +172,42 @@ const ingressRoute = new k8s.apiextensions.CustomResource(name, {
         middlewares: [{ name: ingressMiddleware.metadata.name }],
         services: [
           { name: service.metadata.name, port: service.spec.ports[1].port },
+        ],
+      },
+    ],
+  },
+});
+
+const redirectMiddleware = new k8s.apiextensions.CustomResource(name, {
+  apiVersion: "traefik.containo.us/v1alpha1",
+  kind: "Middleware",
+  metadata: {
+    namespace: deployment.metadata.namespace,
+  },
+  spec: {
+    redirectRegex: {
+      regex: ".*",
+      replacement: "https://github.com/abatilo/chat",
+      permanent: true,
+    }
+  },
+});
+
+const ingressRedirectRoot = new k8s.apiextensions.CustomResource(name, {
+  apiVersion: "traefik.containo.us/v1alpha1",
+  kind: "IngressRoute",
+  metadata: {
+    namespace: deployment.metadata.namespace,
+  },
+  spec: {
+    entryPoints: ["web", "websecure"],
+    routes: [
+      {
+        match: "Host(`chat.aaronbatilo.dev`) && Path(`/`)",
+        kind: "Rule",
+        middlewares: [{ name: redirectMiddleware.metadata.name }],
+        services: [
+          { name: service.metadata.name, port: service.spec.ports[0].port },
         ],
       },
     ],
