@@ -25,6 +25,11 @@ const postgres = new k8s.helm.v3.Chart(`postgres`, {
     postgresqlPostgresPassword: config.requireSecret("postgresPassword"),
     rbac: { create: true },
     volumePermissions: { enabled: true },
+    primary: {
+      nodeSelector: {
+        "failure-domain.beta.kubernetes.io/zone": "us-west-2b"
+      }
+    }
   },
 });
 
