@@ -148,32 +148,3 @@ const ingressRoute = new k8s.apiextensions.CustomResource(name, {
     ],
   },
 });
-
-const ingressRouteSecure = new k8s.apiextensions.CustomResource(name, {
-  apiVersion: "traefik.containo.us/v1alpha1",
-  kind: "IngressRoute",
-  metadata: {
-    namespace: deployment.metadata.namespace,
-  },
-  spec: {
-    entryPoints: ["websecure"],
-    routes: [
-      {
-        match: "Host(`chat.aaronbatilo.dev`) && PathPrefix(`/`)",
-        kind: "Rule",
-        middlewares: [{ name: ingressMiddleware.metadata.name }],
-        services: [
-          { name: service.metadata.name, port: service.spec.ports[0].port },
-        ],
-      },
-      {
-        match: "Host(`chat.aaronbatilo.dev`) && PathPrefix(`/metrics`)",
-        kind: "Rule",
-        middlewares: [{ name: ingressMiddleware.metadata.name }],
-        services: [
-          { name: service.metadata.name, port: service.spec.ports[1].port },
-        ],
-      },
-    ],
-  },
-});
