@@ -65,6 +65,7 @@ func (s *Server) registerRoutes() {
 	s.router.Use(s.sessionManager.LoadAndSave)
 
 	// Application routes
+	s.router.Get("/", s.root())
 	s.router.Get("/check", s.ping())
 	s.router.Post("/users", s.createUser())
 	s.router.Post("/login", s.login())
