@@ -105,7 +105,7 @@ const ingressMiddleware = new k8s.apiextensions.CustomResource("ratelimit", {
   },
 });
 
-const httpToHttpsMiddleware = new k8s.apiextensions.CustomResource("httpRedirect", {
+const httpToHttpsMiddleware = new k8s.apiextensions.CustomResource("http-redirect", {
   apiVersion: "traefik.containo.us/v1alpha1",
   kind: "Middleware",
   metadata: {
@@ -178,7 +178,7 @@ const ingressRouteSecure = new k8s.apiextensions.CustomResource(name, {
   },
 });
 
-const redirectMiddleware = new k8s.apiextensions.CustomResource("githubRedirect", {
+const redirectMiddleware = new k8s.apiextensions.CustomResource("github-redirect", {
   apiVersion: "traefik.containo.us/v1alpha1",
   kind: "Middleware",
   metadata: {
