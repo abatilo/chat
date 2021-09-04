@@ -21,6 +21,7 @@ func (s *Server) registerRoutes() {
 	s.router.Use(s.sessionManager.LoadAndSave)
 
 	// Application routes
+	s.router.Get("/", s.root())
 	s.router.Get("/check", s.ping())
 	s.router.Post("/users", s.createUser())
 	s.router.Post("/login", s.login())
@@ -32,6 +33,42 @@ func (s *Server) registerRoutes() {
 }
 
 // END registerRoutes
+
+func (s *Server) root() http.HandlerFunc {
+	duration := s.metrics.NewHistogram(prometheus.HistogramOpts{
+		Name: "chat_root_duration_seconds",
+		Help: "Histogram for root endpoint latency",
+	})
+
+	const rootContent = `
+<html>
+<head>
+	<style>
+		body {
+			font-family: Sans-Serif;
+		}
+	</style>
+</head>
+<body>
+	<p>
+		You've stumbled upon one of my project websites. Unfortunately, this one
+		doesn't have an interace. It's just an API.
+	</p>
+	<p>
+	You can check out the API and sample requests by checking out the repo's README.
+	</p>
+	<a href="https://github.com/abatilo/chat#integration-testing-script">Check it out on GitHub</a>
+</body>
+</html>
+`
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		startTime := time.Now()
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, rootContent)
+		duration.Observe(time.Since(startTime).Seconds())
+	}
+}
 
 func (s *Server) ping() http.HandlerFunc {
 	duration := s.metrics.NewHistogram(prometheus.HistogramOpts{
