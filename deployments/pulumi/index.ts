@@ -93,7 +93,7 @@ const pdb = new k8s.policy.v1beta1.PodDisruptionBudget(name, {
   },
 });
 
-const ingressMiddleware = new k8s.apiextensions.CustomResource(name, {
+const ingressMiddleware = new k8s.apiextensions.CustomResource("ratelimit", {
   apiVersion: "traefik.containo.us/v1alpha1",
   kind: "Middleware",
   metadata: { namespace: deployment.metadata.namespace },
@@ -105,7 +105,7 @@ const ingressMiddleware = new k8s.apiextensions.CustomResource(name, {
   },
 });
 
-const httpToHttpsMiddleware = new k8s.apiextensions.CustomResource(name, {
+const httpToHttpsMiddleware = new k8s.apiextensions.CustomResource("httpRedirect", {
   apiVersion: "traefik.containo.us/v1alpha1",
   kind: "Middleware",
   metadata: {
@@ -178,7 +178,7 @@ const ingressRouteSecure = new k8s.apiextensions.CustomResource(name, {
   },
 });
 
-const redirectMiddleware = new k8s.apiextensions.CustomResource(name, {
+const redirectMiddleware = new k8s.apiextensions.CustomResource("githubRedirect", {
   apiVersion: "traefik.containo.us/v1alpha1",
   kind: "Middleware",
   metadata: {
