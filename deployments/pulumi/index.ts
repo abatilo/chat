@@ -27,7 +27,7 @@ const postgres = new k8s.helm.v3.Chart(`postgres`, {
     volumePermissions: { enabled: true },
     primary: {
       nodeSelector: {
-        "failure-domain.beta.kubernetes.io/zone": "us-west-2b"
+        "topology.kubernetes.io/zone": "us-west-2b"
       }
     }
   },
