@@ -53,10 +53,6 @@ const pod = new kx.PodBuilder({
       },
       image,
       ports: { http: 8080, admin: 8081 },
-      resources: {
-        requests: { cpu: "250m", memory: "64Mi" },
-        limits: { cpu: "250m", memory: "64Mi" },
-      },
       readinessProbe: {
         httpGet: { path: "/check", port: "http" },
       },
