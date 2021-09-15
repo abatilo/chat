@@ -10,9 +10,12 @@ jobs:
   pulumi:
     name: Run pulumi
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ROLE_ARN: arn:aws:iam::717012417639:role/srv_ops
+      AWS_WEB_IDENTITY_TOKEN_FILE: /tmp/awscreds
       AWS_DEFAULT_REGION: us-west-2
     steps:
       - uses: actions/checkout@v2
@@ -22,6 +25,10 @@ jobs:
       - name: Install asdf tools
         run: |
           ./asdf.sh
+
+      - name: assume role
+        run: |
+          curl -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sigstore" | jq -r '.value' > $AWS_WEB_IDENTITY_TOKEN_FILE
 
       - name: Login to EKS
         run: |
